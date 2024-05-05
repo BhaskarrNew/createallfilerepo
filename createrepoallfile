@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# Check if user provided both repository name and file names
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
+    echo "Usage: $0 <repository_name> <json_file_name_1> <json_file_name_2> <config_ini_file>"
+    exit 1
+fi
+
+# GitHub username and personal access token
+USERNAME="BhaskarrNew"
+TOKEN="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"
+
+# Repository name
+REPO_NAME="$1"
+
+# File names
+JSON_FILE_1="$2"
+JSON_FILE_2="$3"
+CONFIG_INI_FILE="$4"
+
+# Create repository using GitHub API with README and private option
+curl -X POST -H "Authorization: token $TOKEN" -d '{"name": "'"$REPO_NAME"'", "private": true, "auto_init": true}' "https://api.github.com/user/repos"
+
+# Check if repository creation was successful
+if [ $? -eq 0 ]; then
+    echo "Repository '$REPO_NAME' created successfully."
+
+    # Iterate over each file
+    for FILE in "$JSON_FILE_1" "$JSON_FILE_2" "$CONFIG_INI_FILE"; do
+        # Check if file exists
+        if [ -f "$FILE" ]; then
+            # Read the content of the file
+            FILE_CONTENT=$(cat "$FILE")
+
+            # Add the file to the repository
+            curl -X PUT -H "Authorization: token $TOKEN" -d '{"message": "Initial commit", "content": "'"$(echo "$FILE_CONTENT" | base64)"'"}' "https://api.github.com/repos/$USERNAME/$REPO_NAME/contents/$FILE"
+
+            # Check if file upload was successful
+            if [ $? -eq 0 ]; then
+                echo "File '$FILE' uploaded successfully."
+            else
+                echo "Failed to upload file '$FILE'."
+            fi
+        else
+            echo "File '$FILE' not found."
+        fi
+    done
+else
+    echo "Failed to create repository '$REPO_NAME'."
+fi
+
